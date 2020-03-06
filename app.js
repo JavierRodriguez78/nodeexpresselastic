@@ -6,21 +6,42 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-const loggerelastic = require('elasticsearch-logger')();
+const winston = require('winston');
+const Elasticsearch = require('winston-elasticsearch');
 
-try {
-  throw new Error('An error has occurred.');
-} catch (e) {
-  loggerelastic
-    .error(e)
-    .then(() => console.error(e)); // eslint-disable-line no-console
+const esTransportOpts = {
+  level: 'info',
+  clientOpts: {
+    node: "http://localhost:9200",
+
+  }
+};
+
+const loggerElastic = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: "logfile.log", level: 'error' }), //save errors on file
+    new Elasticsearch(esTransportOpts) //everything info and above goes to elastic
+  ]
+});
+
+loggerElastic.info("prueba");
+
+if (process.env.NODE_ENV !== 'production') {
+  loggerElastic.add(new winston.transports.Console({ //we also log to console if we're not in production
+    format: winston.format.simple()
+  }));
 }
+// try {
+//   throw new Error('An error has occurred.');
+// } catch (e) {
+//   loggerelastic
+//     .error(e)
+//     .then(() => console.error(e)); // eslint-disable-line no-console
+// }
 
-loggerelastic
-  .info({
-    some: 'information'
-  })
-  .then(() => console.log());
+
 
 var app = express();
 
